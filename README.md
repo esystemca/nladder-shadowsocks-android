@@ -1,10 +1,10 @@
-## [Shadowsocks](https://shadowsocks.org) for Android
+# [Shadowsocks](https://shadowsocks.org) for Android
 
 [![CircleCI](https://circleci.com/gh/shadowsocks/shadowsocks-android.svg?style=shield)](https://circleci.com/gh/shadowsocks/shadowsocks-android)
 [![API](https://img.shields.io/badge/API-23%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=23)
 [![Releases](https://img.shields.io/github/downloads/shadowsocks/shadowsocks-android/total.svg)](https://github.com/shadowsocks/shadowsocks-android/releases)
 [![Language: Kotlin](https://img.shields.io/github/languages/top/shadowsocks/shadowsocks-android.svg)](https://github.com/shadowsocks/shadowsocks-android/search?l=kotlin)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/22ca240f272445548e332a42d5a20d95)](https://www.codacy.com/gh/shadowsocks/shadowsocks-android/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=shadowsocks/shadowsocks-android&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/22ca240f272445548e332a42d5a20d95)](https://www.codacy.com/gh/shadowsocks/shadowsocks-android/dashboard?utm_source=github.com&utm_medium=referral&utm_content=shadowsocks/shadowsocks-android&utm_campaign=Badge_Grade)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-orange.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 <a href="https://play.google.com/store/apps/details?id=com.github.shadowsocks"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" height="48"></a>
@@ -13,27 +13,27 @@ for Android & Chrome OS ([beta](https://play.google.com/apps/testing/com.github.
 for Android TV ([beta](https://play.google.com/apps/testing/com.github.shadowsocks.tv))
 
 
-### PREREQUISITES
+## PREREQUISITES
 
 * JDK 11+
 * Android SDK
   - Android NDK
 * Rust with Android targets installed using `rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android`
 
-### BUILD
+## BUILD
 
-You can check whether the latest commit builds under UNIX environment by checking Travis status.
+You can check whether the latest commit builds under UNIX environment by checking CircleCI status.
 
 * Install prerequisites
 * Clone the repo using `git clone --recurse-submodules <repo>` or update submodules using `git submodule update --init --recursive`
 * Build it using Android Studio or gradle script
 
-### CONTRIBUTING
+## CONTRIBUTING
 
 If you are interested in contributing or getting involved with this project, please read the CONTRIBUTING page for more information.  The page can be found [here](https://github.com/shadowsocks/shadowsocks-android/blob/master/CONTRIBUTING.md).
 
 
-### [TRANSLATE](https://discourse.shadowsocks.org/t/poeditor-translation-main-thread/30)
+## [TRANSLATE](https://discourse.shadowsocks.org/t/poeditor-translation-main-thread/30)
 
 ## OPEN SOURCE LICENSES
 
@@ -47,7 +47,7 @@ If you are interested in contributing or getting involved with this project, ple
 </ul>
 
 
-### LICENSE
+## LICENSE
 
 Copyright (C) 2017 by Max Lv <<max.c.lv@gmail.com>>  
 Copyright (C) 2017 by Mygod Studio <<contact-shadowsocks-android@mygod.be>>
@@ -63,4 +63,4 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program. If not, see <http://www.gnu.org/licenses/>.
+along with this program. If not, see <https://www.gnu.org/licenses/>.

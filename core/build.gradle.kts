@@ -41,6 +41,15 @@ android {
 }
 
 cargo {
+    findProperty("RUSTC_COMMAND")?.toString()?.let { rustcCommand = it } ?: run {
+        val userCargoRustc = file("${System.getProperty("user.home")}/.cargo/bin/rustc${if (org.gradle.internal.os.OperatingSystem.current().isWindows) ".exe" else ""}")
+        if (userCargoRustc.exists()) rustcCommand = userCargoRustc.absolutePath
+    }
+    findProperty("CARGO_COMMAND")?.toString()?.let { cargoCommand = it } ?: run {
+        val userCargoCargo = file("${System.getProperty("user.home")}/.cargo/bin/cargo${if (org.gradle.internal.os.OperatingSystem.current().isWindows) ".exe" else ""}")
+        if (userCargoCargo.exists()) cargoCommand = userCargoCargo.absolutePath
+    }
+
     module = "src/main/rust/shadowsocks-rust"
     libname = "sslocal"
     targets = if (targetAbi != null) listOf(targetAbi) else listOf("arm", "arm64", "x86", "x86_64")
@@ -57,16 +66,18 @@ cargo {
     exec = { spec, toolchain ->
         run {
             try {
-                Runtime.getRuntime().exec(arrayOf("python3", "-V"))
+                val proc = Runtime.getRuntime().exec(arrayOf("python3", "-V"))
+                if (proc.waitFor() != 0) throw Exception("python3 failed")
                 spec.environment("RUST_ANDROID_GRADLE_PYTHON_COMMAND", "python3")
                 project.logger.lifecycle("Python 3 detected.")
-            } catch (e: java.io.IOException) {
+            } catch (e: Exception) {
                 project.logger.lifecycle("No python 3 detected.")
                 try {
-                    Runtime.getRuntime().exec(arrayOf("python", "-V"))
+                    val proc = Runtime.getRuntime().exec(arrayOf("python", "-V"))
+                    if (proc.waitFor() != 0) throw Exception("python failed")
                     spec.environment("RUST_ANDROID_GRADLE_PYTHON_COMMAND", "python")
                     project.logger.lifecycle("Python detected.")
-                } catch (e: java.io.IOException) {
+                } catch (e: Exception) {
                     throw GradleException("No any python version detected. You should install the python first to compile project.")
                 }
             }
@@ -74,6 +85,17 @@ cargo {
             spec.environment("RUST_ANDROID_GRADLE_CC_LINK_ARG", "-Wl,-z,max-page-size=16384,-soname,lib$libname.so")
             spec.environment("RUST_ANDROID_GRADLE_LINKER_WRAPPER_PY", "$projectDir/$module/../linker-wrapper.py")
             spec.environment("RUST_ANDROID_GRADLE_TARGET", "target/${toolchain.target}/$profile/lib$libname.so")
+
+            val ndkDir = android.ndkDirectory.absolutePath
+            if (ndkDir.isNotEmpty()) {
+                val hostOs = if (org.gradle.internal.os.OperatingSystem.current().isWindows) "windows-x86_64" else "linux-x86_64"
+                val llvmBin = "$ndkDir/toolchains/llvm/prebuilt/$hostOs/bin"
+                val arPath = "$llvmBin/llvm-ar${if (org.gradle.internal.os.OperatingSystem.current().isWindows) ".exe" else ""}"
+                spec.environment("CARGO_TARGET_AARCH64_LINUX_ANDROID_AR", arPath)
+                spec.environment("CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_AR", arPath)
+                spec.environment("CARGO_TARGET_I686_LINUX_ANDROID_AR", arPath)
+                spec.environment("CARGO_TARGET_X86_64_LINUX_ANDROID_AR", arPath)
+            }
         }
     }
 }
