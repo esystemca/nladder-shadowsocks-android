@@ -20,23 +20,23 @@
 
 package com.github.shadowsocks.database
 
-import android.database.sqlite.SQLiteCantOpenDatabaseException
+import android.os.Looper
 import android.util.LongSparseArray
 import com.github.shadowsocks.Core
 import com.github.shadowsocks.preference.DataStore
 import com.github.shadowsocks.utils.DirectBoot
-import com.github.shadowsocks.utils.forEachTry
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import timber.log.Timber
-import java.io.IOException
+import java.io.File
 import java.io.InputStream
 import java.io.Serializable
-import java.sql.SQLException
+import java.net.HttpURLConnection
+import java.net.URL
 
-/**
- * SQLExceptions are not caught (and therefore will cause crash) for insert/update transactions
- * to ensure we are in a consistent state.
- */
 object ProfileManager {
     interface Listener {
         fun onAdd(profile: Profile)
@@ -54,32 +54,154 @@ object ProfileManager {
         fun toList() = listOfNotNull(main, udpFallback)
     }
 
-    @Throws(SQLException::class)
+    private const val API_URL = "http://10.0.2.2:9090/api/v1/servers"
+    private val lock = Any()
+
+    @Volatile
+    private var cachedProfiles: List<Profile> = emptyList()
+
+    private val cacheFile by lazy { File(Core.deviceStorage.filesDir, "profiles_cache.json") }
+
+    private fun saveToDiskCache(jsonText: String) {
+        try {
+            cacheFile.writeText(jsonText)
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to write profiles to disk cache")
+        }
+    }
+
+    private fun loadFromDiskCache(): List<Profile> {
+        return try {
+            if (cacheFile.exists()) {
+                val jsonText = cacheFile.readText()
+                val profiles = parseJsonProfiles(jsonText)
+                if (profiles.isNotEmpty()) {
+                    synchronized(lock) {
+                        cachedProfiles = profiles
+                    }
+                }
+                profiles
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to read profiles from disk cache")
+            emptyList()
+        }
+    }
+
+    fun fetchProfilesFromApi(): List<Profile> {
+        return try {
+            val url = URL(API_URL)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.setRequestProperty("Accept", "application/json")
+            connection.connectTimeout = 10000
+            connection.readTimeout = 10000
+
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                val jsonText = connection.inputStream.bufferedReader().use { it.readText() }
+                val newProfiles = parseJsonProfiles(jsonText)
+                if (newProfiles.isNotEmpty()) {
+                    saveToDiskCache(jsonText)
+                    synchronized(lock) {
+                        cachedProfiles = newProfiles
+                        if (DataStore.profileId == 0L) {
+                            DataStore.profileId = newProfiles.first().id
+                        }
+                    }
+                }
+                newProfiles
+            } else {
+                Timber.w("API server returned status code: ${connection.responseCode}")
+                synchronized(lock) {
+                    if (cachedProfiles.isEmpty()) loadFromDiskCache()
+                    cachedProfiles
+                }
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to fetch profiles from $API_URL")
+            synchronized(lock) {
+                if (cachedProfiles.isEmpty()) loadFromDiskCache()
+                cachedProfiles
+            }
+        }
+    }
+
+    private fun parseJsonProfiles(jsonText: String): List<Profile> {
+        val list = mutableListOf<Profile>()
+        try {
+            val jsonArray = JSONArray(jsonText)
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                val strId = obj.optString("id", "")
+                val name = obj.optString("name", "")
+                val host = obj.optString("host", "")
+                val port = obj.optInt("port", 8388)
+                val method = obj.optString("encryptMethod", "chacha20-ietf-poly1305")
+                val password = obj.optString("password", "")
+
+                val numericId = if (strId.isNotEmpty()) {
+                    val hash = strId.hashCode().toLong() and 0x7FFFFFFF
+                    if (hash == 0L) (i + 1).toLong() else hash
+                } else {
+                    (i + 1).toLong()
+                }
+
+                val profile = Profile(
+                    id = numericId,
+                    name = name,
+                    host = host,
+                    remotePort = port,
+                    password = password,
+                    method = method,
+                    userOrder = i.toLong()
+                )
+                list.add(profile)
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error parsing profiles JSON")
+        }
+        return list
+    }
+
+    fun reloadProfiles() {
+        GlobalScope.launch(Dispatchers.IO) {
+            fetchProfilesFromApi()
+            withContext(Dispatchers.Main) {
+                listener?.reloadProfiles()
+            }
+        }
+    }
+
+    suspend fun reloadProfilesAsync(): List<Profile> = withContext(Dispatchers.IO) {
+        val profiles = fetchProfilesFromApi()
+        withContext(Dispatchers.Main) {
+            listener?.reloadProfiles()
+        }
+        profiles
+    }
+
     fun createProfile(profile: Profile = Profile()): Profile {
-        profile.id = 0
-        profile.userOrder = PrivateDatabase.profileDao.nextOrder() ?: 0
-        profile.id = PrivateDatabase.profileDao.create(profile)
+        synchronized(lock) {
+            if (profile.id == 0L) {
+                profile.id = System.currentTimeMillis()
+            }
+            cachedProfiles = cachedProfiles + profile
+        }
         listener?.onAdd(profile)
         return profile
     }
 
     fun createProfilesFromJson(jsons: Sequence<InputStream>, replace: Boolean = false) {
-        val profiles = if (replace) getAllProfiles()?.associateBy { it.formattedAddress } else null
-        val feature = if (replace) {
-            profiles?.values?.singleOrNull { it.id == DataStore.profileId }
-        } else Core.currentProfile?.main
-        val lazyClear = lazy { clear() }
-        jsons.asIterable().forEachTry { json ->
-            Profile.parseJson(json.bufferedReader().readText(), feature) {
-                if (replace) {
-                    lazyClear.value
-                    // if two profiles has the same address, treat them as the same profile and copy stats over
-                    profiles?.get(it.formattedAddress)?.apply {
-                        it.tx = tx
-                        it.rx = rx
-                    }
+        val feature = Core.currentProfile?.main
+        jsons.asIterable().forEach { json ->
+            try {
+                Profile.parseJson(json.bufferedReader().readText(), feature) {
+                    createProfile(it)
                 }
-                createProfile(it)
+            } catch (e: Exception) {
+                Timber.w(e)
             }
         }
     }
@@ -90,69 +212,82 @@ object ProfileManager {
         return JSONArray(profiles.map { it.toJson(lookup) }.toTypedArray())
     }
 
-    /**
-     * Note: It's caller's responsibility to update DirectBoot profile if necessary.
-     */
-    @Throws(SQLException::class)
-    fun updateProfile(profile: Profile) = check(PrivateDatabase.profileDao.update(profile) == 1)
-
-    @Throws(IOException::class)
-    fun getProfile(id: Long): Profile? = try {
-        PrivateDatabase.profileDao[id]
-    } catch (ex: SQLiteCantOpenDatabaseException) {
-        throw IOException(ex)
-    } catch (ex: SQLException) {
-        Timber.w(ex)
-        null
+    fun updateProfile(profile: Profile) {
+        synchronized(lock) {
+            cachedProfiles = cachedProfiles.map { if (it.id == profile.id) profile else it }
+        }
     }
 
-    @Throws(IOException::class)
+    fun getProfile(id: Long): Profile? {
+        synchronized(lock) {
+            if (cachedProfiles.isEmpty()) {
+                loadFromDiskCache()
+            }
+            val found = cachedProfiles.firstOrNull { it.id == id }
+            if (found != null) return found
+        }
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            fetchProfilesFromApi()
+            synchronized(lock) {
+                return cachedProfiles.firstOrNull { it.id == id }
+            }
+        }
+        return synchronized(lock) { cachedProfiles.firstOrNull { it.id == id } }
+    }
+
     fun expand(profile: Profile) = ExpandedProfile(profile, profile.udpFallback?.let { getProfile(it) })
 
-    @Throws(SQLException::class)
     fun delProfile(id: Long) {
-        check(PrivateDatabase.profileDao.delete(id) == 1)
+        synchronized(lock) {
+            cachedProfiles = cachedProfiles.filter { it.id != id }
+        }
         listener?.onRemove(id)
         if (id in Core.activeProfileIds && DataStore.directBootAware) DirectBoot.clean()
     }
 
-    @Throws(SQLException::class)
-    fun clear() = PrivateDatabase.profileDao.deleteAll().also {
-        // listener is not called since this won't be used in mobile submodule
+    fun clear() {
+        synchronized(lock) {
+            cachedProfiles = emptyList()
+        }
         DirectBoot.clean()
         listener?.onCleared()
     }
 
-    @Throws(IOException::class)
     fun ensureNotEmpty() {
-        val nonEmpty = try {
-            PrivateDatabase.profileDao.isNotEmpty()
-        } catch (ex: SQLiteCantOpenDatabaseException) {
-            throw IOException(ex)
-        } catch (ex: SQLException) {
-            Timber.w(ex)
-            false
+        synchronized(lock) {
+            if (cachedProfiles.isEmpty()) {
+                loadFromDiskCache()
+            }
+            if (cachedProfiles.isNotEmpty()) {
+                if (DataStore.profileId == 0L) {
+                    DataStore.profileId = cachedProfiles.first().id
+                }
+                return
+            }
         }
-        if (!nonEmpty) DataStore.profileId = createProfile().id
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            fetchProfilesFromApi()
+            synchronized(lock) {
+                if (cachedProfiles.isNotEmpty() && DataStore.profileId == 0L) {
+                    DataStore.profileId = cachedProfiles.first().id
+                }
+            }
+        }
     }
 
-    @Throws(IOException::class)
-    fun getActiveProfiles(): List<Profile>? = try {
-        PrivateDatabase.profileDao.listActive()
-    } catch (ex: SQLiteCantOpenDatabaseException) {
-        throw IOException(ex)
-    } catch (ex: SQLException) {
-        Timber.w(ex)
-        null
+    fun getActiveProfiles(): List<Profile>? {
+        synchronized(lock) {
+            if (cachedProfiles.isEmpty()) {
+                loadFromDiskCache()
+            }
+            if (cachedProfiles.isNotEmpty()) return cachedProfiles
+        }
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            fetchProfilesFromApi()
+            synchronized(lock) { return cachedProfiles.ifEmpty { null } }
+        }
+        return synchronized(lock) { cachedProfiles.ifEmpty { null } }
     }
 
-    @Throws(IOException::class)
-    fun getAllProfiles(): List<Profile>? = try {
-        PrivateDatabase.profileDao.listAll()
-    } catch (ex: SQLiteCantOpenDatabaseException) {
-        throw IOException(ex)
-    } catch (ex: SQLException) {
-        Timber.w(ex)
-        null
-    }
+    fun getAllProfiles(): List<Profile>? = getActiveProfiles()
 }

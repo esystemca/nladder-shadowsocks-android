@@ -157,4 +157,5 @@
   <string name="plugin_untrusted">Warning: This plugin does not seem to come from a known trusted source.</string>
   <string name="profile_plugin">Plugin: %s</string>
   <string name="plugin_auto_connect_unlock_only">This plugin might not work with Auto Connect</string>
+  <string name="refresh">Refresh</string>
 </resources>

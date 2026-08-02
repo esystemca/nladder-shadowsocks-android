@@ -279,7 +279,10 @@ object BaseService {
             GlobalScope.launch(Dispatchers.Main.immediate) {
                 FirebaseAnalytics.getInstance(this@Interface as Service).logEvent("stop",
                     bundleOf(FirebaseAnalytics.Param.METHOD to tag))
-                data.connectingJob?.cancelAndJoin() // ensure stop connecting first
+                val currentJob = data.connectingJob
+                if (currentJob != null && currentJob != coroutineContext[Job]) {
+                    currentJob.cancelAndJoin() // ensure stop connecting first
+                }
                 this@Interface as Service
                 // we use a coroutineScope here to allow clean-up in parallel
                 coroutineScope {

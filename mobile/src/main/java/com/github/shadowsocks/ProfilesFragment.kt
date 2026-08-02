@@ -20,7 +20,6 @@
 
 package com.github.shadowsocks
 
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -179,13 +178,8 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
                 if (selectedItem === this) selectedItem = null
             }
 
-            if (item.subscription == Profile.SubscriptionStatus.Active) {
-                edit.visibility = View.GONE
-                subscription.visibility = View.VISIBLE
-            } else {
-                edit.visibility = View.VISIBLE
-                subscription.visibility = View.GONE
-            }
+            edit.visibility = View.GONE
+            subscription.visibility = View.GONE
         }
 
         override fun onClick(v: View?) {
@@ -365,121 +359,31 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
         instance = this
         ProfileManager.listener = profilesAdapter
         undoManager = UndoSnackbarManager(activity as MainActivity, profilesAdapter::undo, profilesAdapter::commit)
-        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN,
-                ItemTouchHelper.START) {
-            override fun getSwipeDirs(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int =
-                    if (isProfileEditable((viewHolder as ProfileViewHolder).item.id)) {
-                        super.getSwipeDirs(recyclerView, viewHolder)
-                    } else 0
-
-            override fun getDragDirs(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int =
-                    if (isEnabled) super.getDragDirs(recyclerView, viewHolder) else 0
+        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, 0) {
+            override fun getSwipeDirs(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int = 0
+            override fun getDragDirs(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int = 0
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                val index = viewHolder.bindingAdapterPosition
-                profilesAdapter.remove(index)
-                undoManager.remove(Pair(index, (viewHolder as ProfileViewHolder).item))
             }
 
             override fun onMove(recyclerView: RecyclerView,
-                                viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
-                profilesAdapter.move(viewHolder.bindingAdapterPosition, target.bindingAdapterPosition)
-                return true
-            }
-
-            override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
-                super.clearView(recyclerView, viewHolder)
-                profilesAdapter.commitMove()
-            }
+                                viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean = false
         }).attachToRecyclerView(profilesList)
+
+        ProfileManager.reloadProfiles()
     }
 
     override fun onMenuItemClick(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.action_scan_qr_code -> {
-                startActivity(Intent(context, ScannerActivity::class.java))
-                true
-            }
-            R.id.action_import_clipboard -> {
-                try {
-                    val profiles = Profile.findAllUrls(
-                            Core.clipboard.primaryClip!!.getItemAt(0).text,
-                            Core.currentProfile?.main
-                    ).toList()
-                    if (profiles.isNotEmpty()) {
-                        profiles.forEach { ProfileManager.createProfile(it) }
-                        (activity as MainActivity).snackbar().setText(R.string.action_import_msg).show()
-                        return true
-                    }
-                } catch (exc: Exception) {
-                    Timber.d(exc)
-                }
-                (activity as MainActivity).snackbar().setText(R.string.action_import_err).show()
-                true
-            }
-            R.id.action_import_file -> {
-                startFilesForResult(importProfiles)
-                true
-            }
-            R.id.action_replace_file -> {
-                startFilesForResult(replaceProfiles)
-                true
-            }
-            R.id.action_manual_settings -> {
-                startConfig(ProfileManager.createProfile(
-                        Profile().also { Core.currentProfile?.main?.copyFeatureSettingsTo(it) }))
-                true
-            }
-            R.id.action_export_clipboard -> {
-                val profiles = ProfileManager.getActiveProfiles()
-                val success = profiles != null && Core.trySetPrimaryClip(profiles.joinToString("\n"), true)
-                (activity as MainActivity).snackbar().setText(
-                        if (success) R.string.action_export_msg else R.string.action_export_err).show()
-                true
-            }
-            R.id.action_export_file -> {
-                startFilesForResult(exportProfiles)
+            R.id.action_refresh -> {
+                ProfileManager.reloadProfiles()
                 true
             }
             else -> false
         }
     }
 
-    private fun startFilesForResult(launcher: ActivityResultLauncher<String>) {
-        try {
-            return launcher.launch("")
-        } catch (_: ActivityNotFoundException) {
-        } catch (_: SecurityException) {
-        }
-        (activity as MainActivity).snackbar(getString(R.string.file_manager_missing)).show()
-    }
 
-    private fun importOrReplaceProfiles(dataUris: List<Uri>, replace: Boolean = false) {
-        if (dataUris.isEmpty()) return
-        val activity = activity as MainActivity
-        try {
-            ProfileManager.createProfilesFromJson(dataUris.asSequence().map {
-                activity.contentResolver.openInputStream(it)
-            }.filterNotNull(), replace)
-        } catch (e: Exception) {
-            activity.snackbar(e.readableMessage).show()
-        }
-    }
-    private val importProfiles = registerForActivityResult(OpenJson) { importOrReplaceProfiles(it) }
-    private val replaceProfiles = registerForActivityResult(OpenJson) { importOrReplaceProfiles(it, true) }
-    private val exportProfiles = registerForActivityResult(SaveJson) { data ->
-        if (data != null) ProfileManager.serializeToJson()?.let { profiles ->
-            val activity = activity as MainActivity
-            try {
-                activity.contentResolver.openOutputStream(data)!!.bufferedWriter().use {
-                    it.write(profiles.toString(2))
-                }
-            } catch (e: Exception) {
-                Timber.w(e)
-                activity.snackbar(e.readableMessage).show()
-            }
-        }
-    }
 
     fun onTrafficUpdated(profileId: Long, stats: TrafficStats) {
         if (profileId != 0L) {  // ignore aggregate stats
