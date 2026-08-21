@@ -17,9 +17,6 @@
     </group>
     <group android:id="@+id/misc"
            android:checkableBehavior="single">
-        <item android:id="@+id/account"
-              android:title="@string/account"
-              android:icon="@drawable/ic_action_lock"/>
         <item android:id="@+id/faq"
               android:checkable="false"
               android:title="@string/faq"
@@ -27,5 +24,8 @@
         <item android:id="@+id/about"
               android:title="@string/about"
               android:icon="@drawable/ic_action_copyright"/>
+        <item android:id="@+id/logout"
+              android:title="@string/logout"
+              android:icon="@drawable/ic_action_lock_open"/>
     </group>
 </menu>

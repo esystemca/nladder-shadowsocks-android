@@ -93,6 +93,10 @@ object DataStore : OnPreferenceDataStoreChangeListener {
         get() = publicStore.getString("userEmail")
         set(value) = publicStore.putString("userEmail", value)
 
+    var hasValidSubscription: Boolean
+        get() = publicStore.getBoolean("hasValidSubscription") ?: false
+        set(value) = publicStore.putBoolean("hasValidSubscription", value)
+
     val isLoggedIn: Boolean get() = !accessToken.isNullOrEmpty()
 
     /**

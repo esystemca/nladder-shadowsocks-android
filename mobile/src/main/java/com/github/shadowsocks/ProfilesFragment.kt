@@ -318,6 +318,10 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
             profiles.clear()
             ProfileManager.getActiveProfiles()?.let { profiles.addAll(it) }
             notifyDataSetChanged()
+            updatePlaceholderVisibility()
+            if (DataStore.isLoggedIn && !DataStore.hasValidSubscription) {
+                (activity as? MainActivity)?.snackbar(getString(R.string.subscription_required))?.show()
+            }
         }
     }
 
@@ -332,6 +336,18 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
     private fun startConfig(profile: Profile) {
         profile.serialize()
         startActivity(Intent(context, ProfileConfigActivity::class.java).putExtra(Action.EXTRA_PROFILE_ID, profile.id))
+    }
+
+    private fun updatePlaceholderVisibility() {
+        val view = view ?: return
+        val placeholder = view.findViewById<View>(R.id.no_subscription_placeholder) ?: return
+        if (DataStore.isLoggedIn && !DataStore.hasValidSubscription) {
+            placeholder.visibility = View.VISIBLE
+            profilesList.visibility = View.GONE
+        } else {
+            placeholder.visibility = View.GONE
+            profilesList.visibility = View.VISIBLE
+        }
     }
 
     override fun onQueryTextChange(query: String): Boolean {
@@ -379,6 +395,7 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
         }).attachToRecyclerView(profilesList)
 
         ProfileManager.reloadProfiles()
+        updatePlaceholderVisibility()
     }
 
     override fun onMenuItemClick(item: MenuItem): Boolean {

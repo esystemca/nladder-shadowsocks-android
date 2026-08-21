@@ -23,6 +23,7 @@ package com.github.shadowsocks.database
 import android.os.Looper
 import android.util.LongSparseArray
 import com.github.shadowsocks.Core
+import com.github.shadowsocks.auth.AuthManager
 import com.github.shadowsocks.preference.DataStore
 import com.github.shadowsocks.utils.ApiConfig
 import com.github.shadowsocks.utils.DirectBoot
@@ -94,6 +95,17 @@ object ProfileManager {
     }
 
     fun fetchProfilesFromApi(): List<Profile> {
+        val subResult = AuthManager.checkSubscription()
+        val hasValidSubscription = subResult.getOrDefault(false)
+        if (!hasValidSubscription) {
+            Timber.w("User does not have a valid subscription")
+            synchronized(lock) {
+                cachedProfiles = emptyList()
+            }
+            try { cacheFile.delete() } catch (_: Exception) {}
+            return emptyList()
+        }
+
         return try {
             val url = URL(API_URL)
             val connection = url.openConnection() as HttpURLConnection
@@ -123,12 +135,15 @@ object ProfileManager {
             } else {
                 if (connection.responseCode == HttpURLConnection.HTTP_UNAUTHORIZED || connection.responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
                     Timber.w("Server returned unauthorized status code: ${connection.responseCode}")
+                    synchronized(lock) { cachedProfiles = emptyList() }
+                    try { cacheFile.delete() } catch (_: Exception) {}
+                    emptyList()
                 } else {
                     Timber.w("API server returned status code: ${connection.responseCode}")
-                }
-                synchronized(lock) {
-                    if (cachedProfiles.isEmpty()) loadFromDiskCache()
-                    cachedProfiles
+                    synchronized(lock) {
+                        if (cachedProfiles.isEmpty()) loadFromDiskCache()
+                        cachedProfiles
+                    }
                 }
             }
         } catch (e: Exception) {

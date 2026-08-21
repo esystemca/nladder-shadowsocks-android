@@ -30,13 +30,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
 import androidx.core.text.HtmlCompat
 import androidx.core.text.parseAsHtml
 import androidx.core.view.ViewCompat
+import com.github.shadowsocks.auth.AuthManager
+import com.github.shadowsocks.preference.DataStore
 import com.github.shadowsocks.widget.ListHolderListener
 import com.github.shadowsocks.widget.MainListListener
 import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
+import com.google.android.material.button.MaterialButton
 
 class AboutFragment : ToolbarFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
@@ -46,6 +50,15 @@ class AboutFragment : ToolbarFragment() {
         super.onViewCreated(view, savedInstanceState)
         ViewCompat.setOnApplyWindowInsetsListener(view, ListHolderListener)
         toolbar.title = getString(R.string.about_title, BuildConfig.VERSION_NAME)
+
+        val logoutButton = view.findViewById<MaterialButton>(R.id.btn_logout)
+        if (DataStore.isLoggedIn) {
+            logoutButton.visibility = View.VISIBLE
+            logoutButton.setOnClickListener { showLogoutConfirmation() }
+        } else {
+            logoutButton.visibility = View.GONE
+        }
+
         view.findViewById<TextView>(R.id.tv_about).apply {
             ViewCompat.setOnApplyWindowInsetsListener(this, MainListListener)
             text = SpannableStringBuilder(resources.openRawResource(R.raw.about).bufferedReader().readText()
@@ -53,6 +66,9 @@ class AboutFragment : ToolbarFragment() {
                 for (span in getSpans(0, length, URLSpan::class.java)) {
                     setSpan(object : ClickableSpan() {
                         override fun onClick(view: View) = when {
+                            span.url == "#logout" || span.url == "logout" -> {
+                                showLogoutConfirmation()
+                            }
                             span.url.startsWith("#") -> {
                                 startActivity(Intent(context, OssLicensesMenuActivity::class.java))
                             }
@@ -69,6 +85,23 @@ class AboutFragment : ToolbarFragment() {
                 }
             }
             movementMethod = LinkMovementMethod.getInstance()
+        }
+    }
+
+    private fun showLogoutConfirmation() {
+        if (DataStore.isLoggedIn) {
+            AlertDialog.Builder(requireContext())
+                .setMessage(getString(R.string.logged_in_as, DataStore.userEmail ?: ""))
+                .setPositiveButton(R.string.logout) { _, _ ->
+                    AuthManager.logout()
+                    val intent = Intent(context, LoginActivity::class.java)
+                    startActivity(intent)
+                    activity?.finish()
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        } else {
+            startActivity(Intent(context, LoginActivity::class.java))
         }
     }
 }

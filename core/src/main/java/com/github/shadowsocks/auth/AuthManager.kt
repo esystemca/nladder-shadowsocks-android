@@ -91,11 +91,62 @@ object AuthManager {
         }
     }
 
+    fun checkSubscription(): Result<Boolean> {
+        val token = DataStore.accessToken
+        if (token.isNullOrEmpty()) {
+            DataStore.hasValidSubscription = false
+            return Result.success(false)
+        }
+
+        val urlString = "${ApiConfig.HOST_URL}/billing/subscription"
+        return try {
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.setRequestProperty("Accept", "application/json")
+            val tokenType = DataStore.tokenType ?: "Bearer"
+            connection.setRequestProperty("Authorization", "$tokenType $token")
+            connection.connectTimeout = 10000
+            connection.readTimeout = 10000
+
+            val responseCode = connection.responseCode
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                val responseText = connection.inputStream.bufferedReader().use { it.readText() }
+                val jsonObj = try { JSONObject(responseText) } catch (_: Exception) { null }
+                val isActive = if (jsonObj != null) {
+                    when {
+                        jsonObj.has("active") -> jsonObj.optBoolean("active")
+                        jsonObj.has("valid") -> jsonObj.optBoolean("valid")
+                        jsonObj.has("hasSubscription") -> jsonObj.optBoolean("hasSubscription")
+                        jsonObj.has("subscribed") -> jsonObj.optBoolean("subscribed")
+                        jsonObj.has("isSubscribed") -> jsonObj.optBoolean("isSubscribed")
+                        jsonObj.has("isValid") -> jsonObj.optBoolean("isValid")
+                        jsonObj.has("status") -> {
+                            val st = jsonObj.optString("status", "").uppercase()
+                            st == "ACTIVE" || st == "SUBSCRIBED" || st == "VALID" || st == "OK" || st == "PAID" || st == "RUNNING"
+                        }
+                        else -> true
+                    }
+                } else true
+
+                DataStore.hasValidSubscription = isActive
+                Result.success(isActive)
+            } else {
+                DataStore.hasValidSubscription = false
+                Result.success(false)
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Check subscription request failed")
+            Result.failure(e)
+        }
+    }
+
     fun logout() {
         DataStore.accessToken = null
         DataStore.refreshToken = null
         DataStore.tokenType = null
         DataStore.userEmail = null
+        DataStore.hasValidSubscription = false
         ProfileManager.clear()
     }
 }

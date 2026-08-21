@@ -171,4 +171,5 @@
   <string name="email_required">Please enter your email</string>
   <string name="password_required">Please enter your password</string>
   <string name="logout_confirm">Are you sure you want to log out?</string>
+  <string name="subscription_required">Active subscription required to connect VPN servers</string>
 </resources>

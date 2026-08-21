@@ -228,10 +228,10 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
                     displayFragment(ProfilesFragment())
                     connection.bandwidthTimeout = connection.bandwidthTimeout   // request stats update
                 }
-                R.id.account -> {
+                R.id.logout -> {
                     if (DataStore.isLoggedIn) {
                         AlertDialog.Builder(this)
-                            .setMessage(getString(R.string.logged_in_as, DataStore.userEmail ?: ""))
+                            .setMessage(getString(R.string.logout_confirm))
                             .setPositiveButton(R.string.logout) { _, _ ->
                                 AuthManager.logout()
                                 updateNavigationHeader()
