@@ -82,6 +82,8 @@ class HttpsTest : ViewModel() {
         status.value = Status.Testing
         val url = URL("https://cp.cloudflare.com")
         val conn = url.openConnection(DataStore.proxy) as HttpURLConnection
+        conn.connectTimeout = 5000
+        conn.readTimeout = 5000
         conn.setRequestProperty("Connection", "close")
         conn.instanceFollowRedirects = false
         conn.useCaches = false

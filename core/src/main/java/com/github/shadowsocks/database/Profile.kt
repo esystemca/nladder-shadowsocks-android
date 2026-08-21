@@ -56,6 +56,7 @@ data class Profile(
 
         // user configurable fields
         var name: String? = "",
+        var countryCode: String? = "",
 
         var host: String = "example.shadowsocks.org",
         var remotePort: Int = 8388,
@@ -272,7 +273,7 @@ data class Profile(
     }
 
     val formattedAddress get() = (if (host.contains(":")) "[%s]:%d" else "%s:%d").format(host, remotePort)
-    val formattedName get() = if (name.isNullOrEmpty()) formattedAddress else name!!
+    val formattedName get() = if (name.isNullOrEmpty()) "Server" else name!!
 
     fun copyFeatureSettingsTo(profile: Profile) {
         profile.route = route

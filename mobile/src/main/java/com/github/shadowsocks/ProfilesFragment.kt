@@ -122,8 +122,10 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
         private val text1 = itemView.findViewById<TextView>(android.R.id.text1)
         private val text2 = itemView.findViewById<TextView>(android.R.id.text2)
         private val traffic = itemView.findViewById<TextView>(R.id.traffic)
+        private val countryCodeView = itemView.findViewById<TextView>(R.id.country_code)
         private val edit = itemView.findViewById<View>(R.id.edit)
         private val subscription = itemView.findViewById<View>(R.id.subscription)
+        private val share = itemView.findViewById<View>(R.id.share)
 
         init {
             edit.setOnClickListener {
@@ -137,7 +139,6 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
             TooltipCompat.setTooltipText(edit, edit.contentDescription)
             TooltipCompat.setTooltipText(subscription, subscription.contentDescription)
             itemView.setOnClickListener(this)
-            val share = itemView.findViewById<View>(R.id.share)
             share.setOnClickListener {
                 val popup = PopupMenu(requireContext(), share)
                 popup.menuInflater.inflate(R.menu.profile_share_popup, popup.menu)
@@ -161,8 +162,14 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
                 rx += rxTotal
             }
             text1.text = item.formattedName
+            val cc = item.countryCode
+            if (!cc.isNullOrEmpty()) {
+                countryCodeView.text = cc
+                countryCodeView.visibility = View.VISIBLE
+            } else {
+                countryCodeView.visibility = View.GONE
+            }
             text2.text = ArrayList<String>().apply {
-                if (!item.name.isNullOrEmpty()) this += item.formattedAddress
                 val id = PluginConfiguration(item.plugin ?: "").selected
                 if (id.isNotEmpty()) this += getString(R.string.profile_plugin, id)
             }.joinToString("\n")
@@ -180,6 +187,7 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener, Sea
 
             edit.visibility = View.GONE
             subscription.visibility = View.GONE
+            share.visibility = View.GONE
         }
 
         override fun onClick(v: View?) {

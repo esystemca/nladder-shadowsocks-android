@@ -24,6 +24,7 @@ import android.os.Looper
 import android.util.LongSparseArray
 import com.github.shadowsocks.Core
 import com.github.shadowsocks.preference.DataStore
+import com.github.shadowsocks.utils.ApiConfig
 import com.github.shadowsocks.utils.DirectBoot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -54,7 +55,9 @@ object ProfileManager {
         fun toList() = listOfNotNull(main, udpFallback)
     }
 
-    private const val API_URL = "http://10.0.2.2:9090/api/v1/servers"
+    const val HOST_URL = ApiConfig.HOST_URL
+    const val SERVERS_ONLINE_PATH = "/api/v1/servers/online"
+    val API_URL get() = "$HOST_URL$SERVERS_ONLINE_PATH"
     private val lock = Any()
 
     @Volatile
@@ -96,6 +99,11 @@ object ProfileManager {
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
             connection.setRequestProperty("Accept", "application/json")
+            val token = DataStore.accessToken
+            if (!token.isNullOrEmpty()) {
+                val tokenType = DataStore.tokenType ?: "Bearer"
+                connection.setRequestProperty("Authorization", "$tokenType $token")
+            }
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
 
@@ -113,7 +121,11 @@ object ProfileManager {
                 }
                 newProfiles
             } else {
-                Timber.w("API server returned status code: ${connection.responseCode}")
+                if (connection.responseCode == HttpURLConnection.HTTP_UNAUTHORIZED || connection.responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
+                    Timber.w("Server returned unauthorized status code: ${connection.responseCode}")
+                } else {
+                    Timber.w("API server returned status code: ${connection.responseCode}")
+                }
                 synchronized(lock) {
                     if (cachedProfiles.isEmpty()) loadFromDiskCache()
                     cachedProfiles
@@ -136,6 +148,7 @@ object ProfileManager {
                 val obj = jsonArray.getJSONObject(i)
                 val strId = obj.optString("id", "")
                 val name = obj.optString("name", "")
+                val countryCode = obj.optString("countryCode", "")
                 val host = obj.optString("host", "")
                 val port = obj.optInt("port", 8388)
                 val method = obj.optString("encryptMethod", "chacha20-ietf-poly1305")
@@ -151,6 +164,7 @@ object ProfileManager {
                 val profile = Profile(
                     id = numericId,
                     name = name,
+                    countryCode = countryCode,
                     host = host,
                     remotePort = port,
                     password = password,

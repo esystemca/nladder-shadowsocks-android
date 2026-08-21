@@ -82,3 +82,7 @@ object Action {
 
     const val EXTRA_PROFILE_ID = "com.github.shadowsocks.EXTRA_PROFILE_ID"
 }
+
+object ApiConfig {
+    const val HOST_URL = "http://178.105.62.27:9090"
+}

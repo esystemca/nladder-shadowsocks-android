@@ -21,6 +21,7 @@
 package com.github.shadowsocks
 
 import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.os.Bundle
 import android.os.RemoteException
 import android.view.KeyCharacterMap
@@ -28,7 +29,10 @@ import android.view.KeyEvent
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
@@ -42,7 +46,9 @@ import com.github.shadowsocks.acl.CustomRulesFragment
 import com.github.shadowsocks.aidl.IShadowsocksService
 import com.github.shadowsocks.aidl.ShadowsocksConnection
 import com.github.shadowsocks.aidl.TrafficStats
+import com.github.shadowsocks.auth.AuthManager
 import com.github.shadowsocks.bg.BaseService
+import com.github.shadowsocks.database.ProfileManager
 import com.github.shadowsocks.preference.DataStore
 import com.github.shadowsocks.preference.OnPreferenceDataStoreChangeListener
 import com.github.shadowsocks.subscription.SubscriptionFragment
@@ -177,6 +183,28 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
         changeState(BaseService.State.Idle, animate = false)    // reset everything to init state
         connection.connect(this, this)
         DataStore.publicStore.registerChangeListener(this)
+
+        updateNavigationHeader()
+        if (!DataStore.isLoggedIn) {
+            loginLauncher.launch(Intent(this, LoginActivity::class.java))
+        }
+    }
+
+    private val loginLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        updateNavigationHeader()
+        if (result.resultCode == RESULT_OK) {
+            ProfileManager.reloadProfiles()
+        }
+    }
+
+    private fun updateNavigationHeader() {
+        val header = navigation.getHeaderView(0) ?: return
+        val subtitle = header.findViewById<TextView>(R.id.drawer_subtitle) ?: return
+        subtitle.text = if (DataStore.isLoggedIn) {
+            DataStore.userEmail ?: getString(R.string.login)
+        } else {
+            getString(R.string.login_required)
+        }
     }
 
     override fun onPreferenceDataStoreChanged(store: PreferenceDataStore, key: String) {
@@ -199,6 +227,24 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
                 R.id.profiles -> {
                     displayFragment(ProfilesFragment())
                     connection.bandwidthTimeout = connection.bandwidthTimeout   // request stats update
+                }
+                R.id.account -> {
+                    if (DataStore.isLoggedIn) {
+                        AlertDialog.Builder(this)
+                            .setMessage(getString(R.string.logged_in_as, DataStore.userEmail ?: ""))
+                            .setPositiveButton(R.string.logout) { _, _ ->
+                                AuthManager.logout()
+                                updateNavigationHeader()
+                                ProfilesFragment.instance?.profilesAdapter?.reloadProfiles()
+                                loginLauncher.launch(Intent(this, LoginActivity::class.java))
+                            }
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .show()
+                    } else {
+                        loginLauncher.launch(Intent(this, LoginActivity::class.java))
+                    }
+                    drawer.closeDrawers()
+                    return true
                 }
                 R.id.globalSettings -> displayFragment(GlobalSettingsFragment())
                 R.id.about -> {

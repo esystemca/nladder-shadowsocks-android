@@ -11,14 +11,31 @@
                android:scaleType="centerCrop"
                android:src="@drawable/background_header"/>
 
-    <TextView android:id="@+id/drawer_title"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:layout_centerVertical="true"
-              android:fontFamily="@font/iceland"
-              android:gravity="center"
-              android:text="shadowsocks"
-              android:textColor="@android:color/white"
-              android:textSize="32sp"
-              tools:ignore="HardcodedText"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView android:id="@+id/drawer_title"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:fontFamily="@font/iceland"
+                  android:gravity="center"
+                  android:text="shadowsocks"
+                  android:textColor="@android:color/white"
+                  android:textSize="32sp"
+                  tools:ignore="HardcodedText"/>
+
+        <TextView android:id="@+id/drawer_subtitle"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_marginTop="4dp"
+                  android:gravity="center"
+                  android:textColor="@android:color/white"
+                  android:textSize="14sp"
+                  tools:text="larry.lin@esystem.ca"/>
+    </LinearLayout>
 </RelativeLayout>

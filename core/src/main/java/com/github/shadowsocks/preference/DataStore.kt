@@ -77,6 +77,24 @@ object DataStore : OnPreferenceDataStoreChangeListener {
         get() = getLocalPort(Key.portTransproxy, 8200)
         set(value) = publicStore.putString(Key.portTransproxy, value.toString())
 
+    var accessToken: String?
+        get() = publicStore.getString("accessToken")
+        set(value) = publicStore.putString("accessToken", value)
+
+    var refreshToken: String?
+        get() = publicStore.getString("refreshToken")
+        set(value) = publicStore.putString("refreshToken", value)
+
+    var tokenType: String?
+        get() = publicStore.getString("tokenType") ?: "Bearer"
+        set(value) = publicStore.putString("tokenType", value)
+
+    var userEmail: String?
+        get() = publicStore.getString("userEmail")
+        set(value) = publicStore.putString("userEmail", value)
+
+    val isLoggedIn: Boolean get() = !accessToken.isNullOrEmpty()
+
     /**
      * Initialize settings that have complicated default values.
      */

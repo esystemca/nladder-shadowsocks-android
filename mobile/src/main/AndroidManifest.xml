@@ -37,6 +37,12 @@
         </activity>
 
         <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:label="@string/login"
+            android:theme="@style/Theme.Shadowsocks.Immersive"/>
+
+        <activity
             android:name=".ProfileConfigActivity"
             android:exported="false"
             android:theme="@style/Theme.Shadowsocks.Immersive"
