@@ -42,7 +42,6 @@ import androidx.core.net.toUri
 import androidx.core.view.*
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.preference.PreferenceDataStore
-import com.github.shadowsocks.acl.CustomRulesFragment
 import com.github.shadowsocks.aidl.IShadowsocksService
 import com.github.shadowsocks.aidl.ShadowsocksConnection
 import com.github.shadowsocks.aidl.TrafficStats
@@ -260,11 +259,6 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
                     FirebaseAnalytics.getInstance(this).logEvent("about", null)
                     displayFragment(AboutFragment())
                 }
-                R.id.faq -> {
-                    launchUrl(getString(R.string.faq_url))
-                    return true
-                }
-                R.id.customRules -> displayFragment(CustomRulesFragment())
                 R.id.subscriptions -> displayFragment(SubscriptionFragment())
                 else -> return false
             }

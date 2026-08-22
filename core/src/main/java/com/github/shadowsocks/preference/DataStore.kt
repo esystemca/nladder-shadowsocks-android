@@ -97,6 +97,30 @@ object DataStore : OnPreferenceDataStoreChangeListener {
         get() = publicStore.getBoolean("hasValidSubscription") ?: false
         set(value) = publicStore.putBoolean("hasValidSubscription", value)
 
+    var subPlanName: String?
+        get() = publicStore.getString("subPlanName")
+        set(value) = publicStore.putString("subPlanName", value)
+
+    var subStatus: String?
+        get() = publicStore.getString("subStatus")
+        set(value) = publicStore.putString("subStatus", value)
+
+    var subBillingInterval: String?
+        get() = publicStore.getString("subBillingInterval")
+        set(value) = publicStore.putString("subBillingInterval", value)
+
+    var subCapLabel: String?
+        get() = publicStore.getString("subCapLabel")
+        set(value) = publicStore.putString("subCapLabel", value)
+
+    var subStartedAt: String?
+        get() = publicStore.getString("subStartedAt")
+        set(value) = publicStore.putString("subStartedAt", value)
+
+    var subExpiredAt: String?
+        get() = publicStore.getString("subExpiredAt")
+        set(value) = publicStore.putString("subExpiredAt", value)
+
     val isLoggedIn: Boolean get() = !accessToken.isNullOrEmpty()
 
     /**

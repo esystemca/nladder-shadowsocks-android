@@ -37,12 +37,17 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.ViewCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.github.shadowsocks.MainActivity
 import com.github.shadowsocks.R
+import com.github.shadowsocks.auth.AuthManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.github.shadowsocks.ToolbarFragment
 import com.github.shadowsocks.plugin.fragment.AlertDialogFragment
 import com.github.shadowsocks.utils.readableMessage
@@ -223,6 +228,59 @@ class SubscriptionFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener 
             toolbar.menu.findItem(R.id.action_update_subscription).isEnabled = it
         }
         val activity = activity as MainActivity
+        val statusText = view.findViewById<TextView>(R.id.subscription_status_text)
+        val detailContainer = view.findViewById<View>(R.id.subscription_detail_container)
+        val planNameView = view.findViewById<TextView>(R.id.sub_plan_name)
+        val billingIntervalView = view.findViewById<TextView>(R.id.sub_billing_interval)
+        val capLabelView = view.findViewById<TextView>(R.id.sub_cap_label)
+        val startedAtView = view.findViewById<TextView>(R.id.sub_started_at)
+        val expiredAtView = view.findViewById<TextView>(R.id.sub_expired_at)
+        
+        fun updateStatusText() {
+            if (com.github.shadowsocks.preference.DataStore.isLoggedIn) {
+                val hasSub = com.github.shadowsocks.preference.DataStore.hasValidSubscription
+                statusText.text = if (hasSub) {
+                    getString(R.string.subscription_status_active)
+                } else {
+                    getString(R.string.subscription_status_inactive)
+                }
+
+                if (hasSub) {
+                    val plan = com.github.shadowsocks.preference.DataStore.subPlanName
+                    val interval = com.github.shadowsocks.preference.DataStore.subBillingInterval
+                    val cap = com.github.shadowsocks.preference.DataStore.subCapLabel
+                    val started = com.github.shadowsocks.preference.DataStore.subStartedAt
+                    val expired = com.github.shadowsocks.preference.DataStore.subExpiredAt
+
+                    planNameView.text = "Plan: ${plan ?: ""}"
+                    billingIntervalView.text = "Billing Interval: ${interval ?: ""}"
+                    capLabelView.text = "Data Limit: ${cap ?: ""}"
+                    startedAtView.text = "Started: ${started ?: ""}"
+                    expiredAtView.text = "Expires: ${expired ?: ""}"
+
+                    detailContainer.visibility = View.VISIBLE
+                } else {
+                    detailContainer.visibility = View.GONE
+                }
+            } else {
+                statusText.text = getString(R.string.login_required)
+                detailContainer.visibility = View.GONE
+            }
+        }
+
+        updateStatusText()
+
+        if (com.github.shadowsocks.preference.DataStore.isLoggedIn) {
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                AuthManager.checkSubscription()
+                withContext(Dispatchers.Main) {
+                    if (isAdded) {
+                        updateStatusText()
+                    }
+                }
+            }
+        }
+
         list = view.findViewById(R.id.list)
         ViewCompat.setOnApplyWindowInsetsListener(list, MainListListener)
         list.layoutManager = LinearLayoutManager(activity, RecyclerView.VERTICAL, false)

@@ -203,6 +203,22 @@ object AuthManager {
                     }
                 } else true
 
+                if (jsonObj != null) {
+                    DataStore.subPlanName = jsonObj.optString("planName", jsonObj.optString("plan_name", jsonObj.optString("plan", "")))
+                    DataStore.subStatus = jsonObj.optString("status", "")
+                    DataStore.subBillingInterval = jsonObj.optString("billingInterval", jsonObj.optString("billing_interval", ""))
+                    DataStore.subCapLabel = jsonObj.optString("capLabel", jsonObj.optString("cap_label", jsonObj.optString("cap", "")))
+                    DataStore.subStartedAt = jsonObj.optString("startedAt", jsonObj.optString("started_at", ""))
+                    DataStore.subExpiredAt = jsonObj.optString("expiredAt", jsonObj.optString("expired_at", jsonObj.optString("expiresAt", jsonObj.optString("endsAt", ""))))
+                } else {
+                    DataStore.subPlanName = null
+                    DataStore.subStatus = null
+                    DataStore.subBillingInterval = null
+                    DataStore.subCapLabel = null
+                    DataStore.subStartedAt = null
+                    DataStore.subExpiredAt = null
+                }
+
                 DataStore.hasValidSubscription = isActive
                 Result.success(isActive)
             } else {
@@ -221,6 +237,12 @@ object AuthManager {
         DataStore.tokenType = null
         DataStore.userEmail = null
         DataStore.hasValidSubscription = false
+        DataStore.subPlanName = null
+        DataStore.subStatus = null
+        DataStore.subBillingInterval = null
+        DataStore.subCapLabel = null
+        DataStore.subStartedAt = null
+        DataStore.subExpiredAt = null
         ProfileManager.clear()
     }
 }
