@@ -109,6 +109,7 @@ object AuthManager {
             connection.readTimeout = 10000
             connection.doOutput = true
 
+            // Send ONLY the JSON body with the single key "refreshToken"
             val requestJson = JSONObject().apply {
                 put("refreshToken", refreshToken)
             }
@@ -133,11 +134,17 @@ object AuthManager {
 
                 Result.success(AuthResponse(tokenType, accessToken, newRefreshToken, expiresIn))
             } else {
+                val errorText = try {
+                    connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+                } catch (_: Exception) {
+                    ""
+                }
+                Timber.e("Refresh failed. Code: $responseCode, Error: $errorText")
                 if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED || responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
                     Timber.e("Refresh token has expired or is invalid. Force logging out.")
                     logout()
                 }
-                Result.failure(Exception("Refresh failed with code: $responseCode"))
+                Result.failure(Exception("Refresh failed with code: $responseCode, msg: $errorText"))
             }
         } catch (e: Exception) {
             Timber.w(e, "Refresh request failed")
