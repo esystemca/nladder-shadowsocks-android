@@ -213,6 +213,15 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
                 connection.disconnect(this)
                 connection.connect(this, this)
             }
+            "accessToken" -> {
+                runOnUiThread {
+                    if (!DataStore.isLoggedIn) {
+                        updateNavigationHeader()
+                        ProfilesFragment.instance?.profilesAdapter?.reloadProfiles()
+                        loginLauncher.launch(Intent(this, LoginActivity::class.java))
+                    }
+                }
+            }
         }
     }
 

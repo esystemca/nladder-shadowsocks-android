@@ -91,8 +91,62 @@ object AuthManager {
         }
     }
 
+    fun refresh(): Result<AuthResponse> {
+        val refreshToken = DataStore.refreshToken
+        if (refreshToken.isNullOrEmpty()) {
+            logout()
+            return Result.failure(Exception("No refresh token available"))
+        }
+
+        val urlString = "${ApiConfig.HOST_URL}/auth/refresh"
+        return try {
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.setRequestProperty("Accept", "application/json")
+            connection.connectTimeout = 10000
+            connection.readTimeout = 10000
+            connection.doOutput = true
+
+            val requestJson = JSONObject().apply {
+                put("refreshToken", refreshToken)
+            }
+
+            OutputStreamWriter(connection.outputStream).use { writer ->
+                writer.write(requestJson.toString())
+                writer.flush()
+            }
+
+            val responseCode = connection.responseCode
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                val responseText = connection.inputStream.bufferedReader().use { it.readText() }
+                val jsonObj = JSONObject(responseText)
+                val tokenType = jsonObj.optString("tokenType", "Bearer")
+                val accessToken = jsonObj.optString("accessToken", "")
+                val newRefreshToken = jsonObj.optString("refreshToken", "")
+                val expiresIn = jsonObj.optLong("expiresIn", 3600)
+
+                DataStore.accessToken = accessToken
+                DataStore.refreshToken = newRefreshToken
+                DataStore.tokenType = tokenType
+
+                Result.success(AuthResponse(tokenType, accessToken, newRefreshToken, expiresIn))
+            } else {
+                if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED || responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
+                    Timber.e("Refresh token has expired or is invalid. Force logging out.")
+                    logout()
+                }
+                Result.failure(Exception("Refresh failed with code: $responseCode"))
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Refresh request failed")
+            Result.failure(e)
+        }
+    }
+
     fun checkSubscription(): Result<Boolean> {
-        val token = DataStore.accessToken
+        var token = DataStore.accessToken
         if (token.isNullOrEmpty()) {
             DataStore.hasValidSubscription = false
             return Result.success(false)
@@ -101,15 +155,35 @@ object AuthManager {
         val urlString = "${ApiConfig.HOST_URL}/billing/subscription"
         return try {
             val url = URL(urlString)
-            val connection = url.openConnection() as HttpURLConnection
+            var connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
             connection.setRequestProperty("Accept", "application/json")
-            val tokenType = DataStore.tokenType ?: "Bearer"
+            var tokenType = DataStore.tokenType ?: "Bearer"
             connection.setRequestProperty("Authorization", "$tokenType $token")
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
 
-            val responseCode = connection.responseCode
+            var responseCode = connection.responseCode
+            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED || responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
+                Timber.w("Access token expired for subscription check, trying to refresh...")
+                val refreshResult = refresh()
+                if (refreshResult.isSuccess) {
+                    token = DataStore.accessToken
+                    tokenType = DataStore.tokenType ?: "Bearer"
+                    connection = url.openConnection() as HttpURLConnection
+                    connection.requestMethod = "GET"
+                    connection.setRequestProperty("Accept", "application/json")
+                    connection.setRequestProperty("Authorization", "$tokenType $token")
+                    connection.connectTimeout = 10000
+                    connection.readTimeout = 10000
+                    responseCode = connection.responseCode
+                } else {
+                    Timber.e("Refresh token failed/expired for subscription check.")
+                    DataStore.hasValidSubscription = false
+                    return Result.success(false)
+                }
+            }
+
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 val responseText = connection.inputStream.bufferedReader().use { it.readText() }
                 val jsonObj = try { JSONObject(responseText) } catch (_: Exception) { null }

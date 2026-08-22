@@ -108,10 +108,10 @@ object ProfileManager {
 
         return try {
             val url = URL(API_URL)
-            val connection = url.openConnection() as HttpURLConnection
+            var connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
             connection.setRequestProperty("Accept", "application/json")
-            val token = DataStore.accessToken
+            var token = DataStore.accessToken
             if (!token.isNullOrEmpty()) {
                 val tokenType = DataStore.tokenType ?: "Bearer"
                 connection.setRequestProperty("Authorization", "$tokenType $token")
@@ -119,7 +119,31 @@ object ProfileManager {
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
 
-            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+            var responseCode = connection.responseCode
+            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED || responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
+                Timber.w("Access token expired for profile fetching, trying to refresh...")
+                val refreshResult = AuthManager.refresh()
+                if (refreshResult.isSuccess) {
+                    token = DataStore.accessToken
+                    connection = url.openConnection() as HttpURLConnection
+                    connection.requestMethod = "GET"
+                    connection.setRequestProperty("Accept", "application/json")
+                    if (!token.isNullOrEmpty()) {
+                        val tokenType = DataStore.tokenType ?: "Bearer"
+                        connection.setRequestProperty("Authorization", "$tokenType $token")
+                    }
+                    connection.connectTimeout = 10000
+                    connection.readTimeout = 10000
+                    responseCode = connection.responseCode
+                } else {
+                    Timber.e("Refresh token failed/expired for profile fetching. User logged out.")
+                    synchronized(lock) { cachedProfiles = emptyList() }
+                    try { cacheFile.delete() } catch (_: Exception) {}
+                    return emptyList()
+                }
+            }
+
+            if (responseCode == HttpURLConnection.HTTP_OK) {
                 val jsonText = connection.inputStream.bufferedReader().use { it.readText() }
                 val newProfiles = parseJsonProfiles(jsonText)
                 if (newProfiles.isNotEmpty()) {
@@ -133,13 +157,13 @@ object ProfileManager {
                 }
                 newProfiles
             } else {
-                if (connection.responseCode == HttpURLConnection.HTTP_UNAUTHORIZED || connection.responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
-                    Timber.w("Server returned unauthorized status code: ${connection.responseCode}")
+                if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED || responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
+                    Timber.w("Server returned unauthorized status code even after refresh: $responseCode")
                     synchronized(lock) { cachedProfiles = emptyList() }
                     try { cacheFile.delete() } catch (_: Exception) {}
                     emptyList()
                 } else {
-                    Timber.w("API server returned status code: ${connection.responseCode}")
+                    Timber.w("API server returned status code: $responseCode")
                     synchronized(lock) {
                         if (cachedProfiles.isEmpty()) loadFromDiskCache()
                         cachedProfiles
