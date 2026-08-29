@@ -9,13 +9,21 @@
   <color name="material_blue_grey_500">#607D8B</color>
   <color name="material_blue_grey_600">#546E7A</color>
   <color name="material_blue_grey_700">#455A64</color>
-  <color name="material_primary_100">@color/material_blue_grey_100</color>
-  <color name="material_primary_300">@color/material_blue_grey_300</color>
-  <color name="material_primary_500">@color/material_blue_grey_500</color>
-  <color name="material_primary_600">@color/material_blue_grey_600</color>
-  <color name="material_primary_700">@color/material_blue_grey_700</color>
-  <color name="material_primary_800">@color/material_blue_grey_800</color>
-  <color name="material_primary_900">@color/material_blue_grey_900</color>
+  <color name="nladder_cyan_blue_100">#B3E5FC</color>
+  <color name="nladder_cyan_blue_300">#4FC3F7</color>
+  <color name="nladder_cyan_blue_500">#34b7e5</color>
+  <color name="nladder_cyan_blue_600">#23a1cc</color>
+  <color name="nladder_cyan_blue_700">#198fb8</color>
+  <color name="nladder_cyan_blue_800">#0f7ca3</color>
+  <color name="nladder_cyan_blue_900">#076385</color>
+
+  <color name="material_primary_100">@color/nladder_cyan_blue_100</color>
+  <color name="material_primary_300">@color/nladder_cyan_blue_300</color>
+  <color name="material_primary_500">@color/nladder_cyan_blue_500</color>
+  <color name="material_primary_600">@color/nladder_cyan_blue_600</color>
+  <color name="material_primary_700">@color/nladder_cyan_blue_700</color>
+  <color name="material_primary_800">@color/nladder_cyan_blue_800</color>
+  <color name="material_primary_900">@color/nladder_cyan_blue_900</color>
   <color name="material_accent_200">@color/material_green_a700</color>
 
   <color name="light_color_primary">@color/material_primary_500</color>

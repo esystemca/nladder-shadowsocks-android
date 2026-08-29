@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-  <string name="app_name">Shadowsocks</string>
+  <string name="app_name">nladdervpn</string>
   <string name="quick_toggle">Toggle</string>
   <string name="send_email">Send email</string>
 
@@ -53,7 +53,7 @@
   <string name="bypass_apps">Bypass</string>
   <string name="bypass_apps_summary">Enable this option to bypass selected apps</string>
   <string name="auto_connect">Auto Connect</string>
-  <string name="auto_connect_summary">Enable Shadowsocks on startup/app update if it was running before</string>
+  <string name="auto_connect_summary">Enable nladdervpn on startup/app update if it was running before</string>
   <string name="direct_boot_aware">Allow Toggling in Lock Screen</string>
   <string name="direct_boot_aware_summary">Your selected profile information will be less protected</string>
   <plurals name="hosts_summary">
@@ -68,7 +68,7 @@
   <string name="service_vpn">VPN Service</string>
   <string name="service_proxy">Proxy Service</string>
   <string name="service_transproxy">Transproxy Service</string>
-  <string name="forward_success">Shadowsocks started.</string>
+  <string name="forward_success">nladdervpn started.</string>
   <string name="service_failed">Failed to connect the remote server</string>
   <string name="stop">Stop</string>
   <string name="stopping">Shutting down…</string>
@@ -109,7 +109,7 @@
   <string name="delete">Remove</string>
   <string name="delete_confirm_prompt">Are you sure you want to remove this profile?</string>
   <string name="share_qr_nfc">QR code</string>
-  <string name="add_profile_dialog">Add this Shadowsocks Profile?</string>
+  <string name="add_profile_dialog">Add this nladdervpn Profile?</string>
   <string name="add_profile_methods_scan_qr_code">Scan QR code</string>
   <string name="add_profile_methods_manual_settings">Manual Settings</string>
   <string name="add_profile_scanner_permission_required">Camera permission is required for scanning QR code.</string>

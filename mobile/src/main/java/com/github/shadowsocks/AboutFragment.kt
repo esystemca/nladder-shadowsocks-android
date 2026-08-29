@@ -21,10 +21,15 @@
 package com.github.shadowsocks
 
 import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.os.Bundle
+import android.text.Layout
 import android.text.SpannableStringBuilder
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
+import android.text.style.LeadingMarginSpan
+import android.text.style.QuoteSpan
 import android.text.style.URLSpan
 import android.view.LayoutInflater
 import android.view.View
@@ -63,6 +68,17 @@ class AboutFragment : ToolbarFragment() {
             ViewCompat.setOnApplyWindowInsetsListener(this, MainListListener)
             text = SpannableStringBuilder(resources.openRawResource(R.raw.about).bufferedReader().readText()
                     .parseAsHtml(HtmlCompat.FROM_HTML_SEPARATOR_LINE_BREAK_LIST_ITEM)).apply {
+                val density = resources.displayMetrics.density
+                val stripeWidth = (4 * density).toInt()
+                val gapWidth = (12 * density).toInt()
+                for (span in getSpans(0, length, QuoteSpan::class.java)) {
+                    val start = getSpanStart(span)
+                    val end = getSpanEnd(span)
+                    val flags = getSpanFlags(span)
+                    removeSpan(span)
+                    setSpan(CustomQuoteSpan(0xFF007E3A.toInt(), stripeWidth, gapWidth), start, end, flags)
+                }
+
                 for (span in getSpans(0, length, URLSpan::class.java)) {
                     setSpan(object : ClickableSpan() {
                         override fun onClick(view: View) = when {
@@ -105,3 +121,46 @@ class AboutFragment : ToolbarFragment() {
         }
     }
 }
+
+class CustomQuoteSpan(
+    private val color: Int,
+    private val stripeWidth: Int,
+    private val gapWidth: Int
+) : LeadingMarginSpan {
+    override fun getLeadingMargin(first: Boolean): Int = stripeWidth + gapWidth
+
+    override fun drawLeadingMargin(
+        c: Canvas,
+        p: Paint,
+        x: Int,
+        dir: Int,
+        top: Int,
+        baseline: Int,
+        bottom: Int,
+        text: CharSequence,
+        start: Int,
+        end: Int,
+        first: Boolean,
+        layout: Layout
+    ) {
+        val style = p.style
+        val paintColor = p.color
+
+        p.style = Paint.Style.FILL
+        p.color = color
+
+        val left = x.toFloat()
+        val right = (x + dir * stripeWidth).toFloat()
+        c.drawRect(
+            kotlin.math.min(left, right),
+            top.toFloat(),
+            kotlin.math.max(left, right),
+            bottom.toFloat(),
+            p
+        )
+
+        p.style = style
+        p.color = paintColor
+    }
+}
+

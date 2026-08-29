@@ -64,23 +64,23 @@
     <string name="stopping">"正在关闭…"</string>
     <string name="vpn_error">"后台服务启动失败：%s"</string>
     <string name="reboot_required">"VPN 服务启动失败。你可能需要重启设备。"</string>
-    <string name="profile_invalid_input">"未找到有效的配置文件。"</string>
+    <string name="profile_invalid_input">"未找到有效的服务器节点。"</string>
 
     <!-- alert category -->
-    <string name="profile_empty">"请选择配置文件"</string>
+    <string name="profile_empty">"请选择服务器节点"</string>
     <string name="proxy_empty">"代理服务器地址及密码不能为空"</string>
     <string name="connect">"连接"</string>
 
     <!-- menu category -->
-    <string name="profiles">"配置文件"</string>
+    <string name="profiles">"服务器节点"</string>
     <string name="settings">"设置选项"</string>
     <string name="faq">"常见问题"</string>
     <string name="about">"关于"</string>
     <string name="about_title">"影梭 (Shadowsocks) %s"</string>
     <string name="edit">"编辑"</string>
     <string name="share">"分享"</string>
-    <string name="add_profile">"添加配置文件"</string>
-    <string name="action_apply_all">"应用设置到所有配置文件"</string>
+    <string name="add_profile">"添加服务器节点"</string>
+    <string name="action_apply_all">"应用设置到所有服务器节点"</string>
     <string name="action_export">"导出至剪贴板"</string>
     <string name="action_import">"从剪贴板导入"</string>
     <string name="action_export_msg">"导出至剪贴板成功"</string>
@@ -89,11 +89,11 @@
     <string name="action_import_err">"导入失败"</string>
 
     <!-- profile -->
-    <string name="profile_config">"配置文件设置"</string>
+    <string name="profile_config">"服务器节点设置"</string>
     <string name="delete">"删除"</string>
-    <string name="delete_confirm_prompt">"您确定要删除此配置文件？"</string>
+    <string name="delete_confirm_prompt">"您确定要删除此服务器节点？"</string>
     <string name="share_qr_nfc">"二维码"</string>
-    <string name="add_profile_dialog">"为影梭添加此配置文件？"</string>
+    <string name="add_profile_dialog">"为 nladdervpn 添加此服务器节点？"</string>
     <string name="add_profile_methods_scan_qr_code">"扫描二维码"</string>
     <plurals name="removed">
         <item quantity="other">"已删除 %d 项"</item>
@@ -154,7 +154,7 @@
     <string name="service_proxy">"代理模式"</string>
     <string name="service_transproxy">"透明代理模式"</string>
     <string name="vpn_permission_denied">"创建 VPN 服务权限不足"</string>
-    <string name="auto_connect_summary_v24">"允许 Shadowsocks 随系统启动，建议使用始终开启的 VPN"</string>
+    <string name="auto_connect_summary_v24">"允许 nladdervpn 随系统启动，建议使用始终开启的 VPN"</string>
     <string name="direct_boot_aware">"允许锁屏时切换"</string>
     <string name="direct_boot_aware_summary">"选中的配置信息会不那么安全"</string>
     <string name="acl_rule_online_config">"在线规则文件 URL"</string>
@@ -183,11 +183,27 @@
     </plurals>
 
     <!-- subscriptions -->
-    <string name="subscriptions">"订阅"</string>
+    <string name="subscriptions">"我的订阅"</string>
     <string name="add_subscription">"添加订阅"</string>
     <string name="edit_subscription">"编辑订阅"</string>
     <string name="update_subscription">"更新订阅"</string>
     <string name="service_subscription">"订阅服务"</string>
     <string name="service_subscription_working">"正在更新订阅 (%d / %d)"</string>
     <string name="service_subscription_finishing">"订阅更新中"</string>
+
+    <!-- auth -->
+    <string name="login">"登录"</string>
+    <string name="logout">"登出"</string>
+    <string name="email">"邮箱"</string>
+    <string name="password">"密码"</string>
+    <string name="account">"账户"</string>
+    <string name="logged_in_as">"已登录为 %s"</string>
+    <string name="login_prompt">"登录"</string>
+    <string name="login_required">"请登录以继续"</string>
+    <string name="email_required">"请输入您的邮箱"</string>
+    <string name="password_required">"请输入您的密码"</string>
+    <string name="logout_confirm">"您确定要登出吗？"</string>
+    <string name="subscription_required">"需要有效的订阅才能连接 VPN 服务器"</string>
+    <string name="subscription_status_active">"有效订阅"</string>
+    <string name="subscription_status_inactive">"无有效订阅"</string>
 </resources>
