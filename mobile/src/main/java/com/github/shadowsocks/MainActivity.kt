@@ -193,6 +193,8 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
         updateNavigationHeader()
         if (result.resultCode == RESULT_OK) {
             ProfileManager.reloadProfiles()
+        } else if (!DataStore.isLoggedIn) {
+            finish()
         }
     }
 
@@ -242,9 +244,6 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPref
                             .setMessage(getString(R.string.logout_confirm))
                             .setPositiveButton(R.string.logout) { _, _ ->
                                 AuthManager.logout()
-                                updateNavigationHeader()
-                                ProfilesFragment.instance?.profilesAdapter?.reloadProfiles()
-                                loginLauncher.launch(Intent(this, LoginActivity::class.java))
                             }
                             .setNegativeButton(android.R.string.cancel, null)
                             .show()

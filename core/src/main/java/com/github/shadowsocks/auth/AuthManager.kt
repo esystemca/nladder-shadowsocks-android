@@ -11,6 +11,7 @@
 
 package com.github.shadowsocks.auth
 
+import com.github.shadowsocks.Core
 import com.github.shadowsocks.database.ProfileManager
 import com.github.shadowsocks.preference.DataStore
 import com.github.shadowsocks.utils.ApiConfig
@@ -75,9 +76,21 @@ object AuthManager {
                 val errorMessage = if (errorText.isNotEmpty()) {
                     try {
                         val errorJson = JSONObject(errorText)
-                        errorJson.optString("message", "Login failed (Status $responseCode)")
+                        when {
+                            errorJson.has("message") && errorJson.getString("message").isNotEmpty() -> errorJson.getString("message")
+                            errorJson.has("error_description") && errorJson.getString("error_description").isNotEmpty() -> errorJson.getString("error_description")
+                            errorJson.has("error") && errorJson.getString("error").isNotEmpty() -> errorJson.getString("error")
+                            errorJson.has("msg") && errorJson.getString("msg").isNotEmpty() -> errorJson.getString("msg")
+                            errorJson.has("errorMessage") && errorJson.getString("errorMessage").isNotEmpty() -> errorJson.getString("errorMessage")
+                            else -> "Login failed (Status $responseCode)"
+                        }
                     } catch (_: Exception) {
-                        "Login failed (Status $responseCode)"
+                        val trimmed = errorText.trim()
+                        if (trimmed.isNotEmpty() && !trimmed.contains("<!DOCTYPE html", ignoreCase = true) && !trimmed.contains("<html", ignoreCase = true)) {
+                            trimmed
+                        } else {
+                            "Login failed (Status $responseCode)"
+                        }
                     }
                 } else {
                     "Login failed (Status $responseCode)"
@@ -239,6 +252,7 @@ object AuthManager {
     }
 
     fun logout() {
+        Core.stopService()
         DataStore.accessToken = null
         DataStore.refreshToken = null
         DataStore.tokenType = null

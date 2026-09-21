@@ -57,7 +57,7 @@ object ProfileManager {
     }
 
     const val HOST_URL = ApiConfig.HOST_URL
-    const val SERVERS_ONLINE_PATH = "/api/v1/servers/online"
+    const val SERVERS_ONLINE_PATH = "/servers/online"
     val API_URL get() = "$HOST_URL$SERVERS_ONLINE_PATH"
     private val lock = Any()
 

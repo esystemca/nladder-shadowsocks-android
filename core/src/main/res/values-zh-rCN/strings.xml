@@ -203,6 +203,7 @@
     <string name="email_required">"请输入您的邮箱"</string>
     <string name="password_required">"请输入您的密码"</string>
     <string name="logout_confirm">"您确定要登出吗？"</string>
+    <string name="login_failed">"登录失败"</string>
     <string name="subscription_required">"需要有效的订阅才能连接 VPN 服务器"</string>
     <string name="subscription_status_active">"有效订阅"</string>
     <string name="subscription_status_inactive">"无有效订阅"</string>

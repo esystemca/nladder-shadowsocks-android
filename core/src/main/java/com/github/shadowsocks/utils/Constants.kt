@@ -84,5 +84,5 @@ object Action {
 }
 
 object ApiConfig {
-    const val HOST_URL = "http://178.105.62.27:8090"
+    const val HOST_URL = "https://dev-api.nladder.com"
 }

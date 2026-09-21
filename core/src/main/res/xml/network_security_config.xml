@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <base-config cleartextTrafficPermitted="false"/>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+    <domain-config>
+        <domain includeSubdomains="true">dev-api.nladder.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="@raw/dev_ca" />
+            <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">178.105.62.27</domain>
         <domain includeSubdomains="true">10.0.2.2</domain>

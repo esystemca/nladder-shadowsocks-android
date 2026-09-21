@@ -82,7 +82,7 @@ class LoginActivity : AppCompatActivity() {
                 } else {
                     progressBar.visibility = View.GONE
                     loginButton.isEnabled = true
-                    errorText.text = result.exceptionOrNull()?.message ?: getString(R.string.connection_test_fail)
+                    errorText.text = result.exceptionOrNull()?.message?.takeIf { it.isNotBlank() } ?: getString(R.string.login_failed)
                     errorText.visibility = View.VISIBLE
                 }
             }

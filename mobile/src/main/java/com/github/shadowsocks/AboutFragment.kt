@@ -110,9 +110,6 @@ class AboutFragment : ToolbarFragment() {
                 .setMessage(getString(R.string.logged_in_as, DataStore.userEmail ?: ""))
                 .setPositiveButton(R.string.logout) { _, _ ->
                     AuthManager.logout()
-                    val intent = Intent(context, LoginActivity::class.java)
-                    startActivity(intent)
-                    activity?.finish()
                 }
                 .setNegativeButton(android.R.string.cancel, null)
                 .show()
